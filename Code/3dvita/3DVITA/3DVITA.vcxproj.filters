@@ -24,6 +24,9 @@
     <ClCompile Include="AudioSource.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="3DCamera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Sound.wav">
@@ -42,6 +45,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AudioSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="3DCamera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

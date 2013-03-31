@@ -1,13 +1,29 @@
-﻿Build started 19-3-13 13:59:25.
+﻿Build started 31-3-13 14:25:01.
      1>Project "C:\Users\Robrecht\3DVITA\Code\3dvita\3DVITA\3DVITA.vcxproj" on node 2 (build target(s)).
      1>InitializeBuildStatus:
          Creating "Release\3DVITA.unsuccessfulbuild" because "AlwaysCreate" was specified.
        ClCompile:
-         c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /I"C:\Users\Robrecht\Libraries\openal-soft\include" /Zi /nologo /W3 /WX- /O2 /Oi /Oy- /GL /D _MBCS /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc100.pdb" /Gd /TP /analyze- /errorReport:prompt AudioSource.cpp
-         AudioSource.cpp
-     1>AudioSource.cpp(33): warning C4244: '=' : conversion from 'float' to 'short', possible loss of data
+         c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /I"C:\Users\Robrecht\Libraries\openal-soft\include" /I"C:\Program Files (x86)\PCL 1.6.0\include\pcl-1.6" /I"C:\Program Files (x86)\PCL 1.6.0\3rdParty\Boost\include" /I"C:\Program Files (x86)\PCL 1.6.0\3rdParty\Eigen\include" /I"C:\Program Files (x86)\OpenNI\Include" /I"C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\include\vtk-5.8" /Zi /nologo /W3 /WX- /O2 /Oi /Oy- /GL /D _MBCS /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc100.pdb" /Gd /TP /analyze- /errorReport:prompt 3DCamera.cpp
+         3DCamera.cpp
+     1>C:\Program Files (x86)\PCL 1.6.0\include\pcl-1.6\pcl/io/pcl_io_exception.h(87): warning C4996: 'vsprintf': This function or variable may be unsafe. Consider using vsprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'vsprintf'
+     1>c:\program files (x86)\pcl 1.6.0\include\pcl-1.6\pcl\io\openni_camera\openni_exception.h(135): warning C4996: 'vsprintf': This function or variable may be unsafe. Consider using vsprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'vsprintf'
+     1>C:\Program Files (x86)\PCL 1.6.0\include\pcl-1.6\pcl/impl/point_types.hpp(1008): warning C4996: 'pcl::SHOT': USE SHOT352 FOR SHAPE AND SHOT1344 FOR SHAPE+COLOR INSTEAD
+                 C:\Program Files (x86)\PCL 1.6.0\include\pcl-1.6\pcl/impl/point_types.hpp(1003) : see declaration of 'pcl::SHOT'
+     1>C:\Program Files (x86)\PCL 1.6.0\include\pcl-1.6\pcl/impl/point_types.hpp(1009): warning C4996: 'pcl::SHOT': USE SHOT352 FOR SHAPE AND SHOT1344 FOR SHAPE+COLOR INSTEAD
+                 C:\Program Files (x86)\PCL 1.6.0\include\pcl-1.6\pcl/impl/point_types.hpp(1003) : see declaration of 'pcl::SHOT'
+     1>C:\Program Files (x86)\PCL 1.6.0\include\pcl-1.6\pcl/impl/point_types.hpp(1012): warning C4996: 'pcl::SHOT::rf': USE SHOT352 FOR SHAPE AND SHOT1344 FOR SHAPE+COLOR INSTEAD
+                 C:\Program Files (x86)\PCL 1.6.0\include\pcl-1.6\pcl/impl/point_types.hpp(1005) : see declaration of 'pcl::SHOT::rf'
+     1>C:\Program Files (x86)\PCL 1.6.0\include\pcl-1.6\pcl/impl/point_types.hpp(1013): warning C4996: 'pcl::SHOT::descriptor': USE SHOT352 FOR SHAPE AND SHOT1344 FOR SHAPE+COLOR INSTEAD
+                 C:\Program Files (x86)\PCL 1.6.0\include\pcl-1.6\pcl/impl/point_types.hpp(1004) : see declaration of 'pcl::SHOT::descriptor'
+     1>C:\Program Files (x86)\PCL 1.6.0\include\pcl-1.6\pcl/impl/point_types.hpp(1014): warning C4996: 'pcl::SHOT::descriptor': USE SHOT352 FOR SHAPE AND SHOT1344 FOR SHAPE+COLOR INSTEAD
+                 C:\Program Files (x86)\PCL 1.6.0\include\pcl-1.6\pcl/impl/point_types.hpp(1004) : see declaration of 'pcl::SHOT::descriptor'
+     1>C:\Program Files (x86)\PCL 1.6.0\include\pcl-1.6\pcl/impl/point_types.hpp(1014): warning C4996: 'pcl::SHOT::descriptor': USE SHOT352 FOR SHAPE AND SHOT1344 FOR SHAPE+COLOR INSTEAD
+                 C:\Program Files (x86)\PCL 1.6.0\include\pcl-1.6\pcl/impl/point_types.hpp(1004) : see declaration of 'pcl::SHOT::descriptor'
        Link:
-         c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\Robrecht\3DVITA\Code\3dvita\Release\3DVITA.exe" /NOLOGO /LIBPATH:"C:\Users\Robrecht\Libraries\openal-soft\build\Release" OpenAL32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /ManifestFile:"Release\3DVITA.exe.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /DEBUG /PDB:"C:\Users\Robrecht\3DVITA\Code\3dvita\Release\3DVITA.pdb" /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\Robrecht\3DVITA\Code\3dvita\Release\3DVITA.lib" /MACHINE:X86 Release\AudioSource.obj
+         c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\Robrecht\3DVITA\Code\3dvita\Release\3DVITA.exe" /NOLOGO /LIBPATH:"C:\Users\Robrecht\Libraries\openal-soft\build\Release" /LIBPATH:"C:\Program Files (x86)\PCL 1.6.0\lib" /LIBPATH:"C:\Program Files (x86)\PCL 1.6.0\3rdParty\Boost\lib" /LIBPATH:"C:\Program Files (x86)\PCL 1.6.0\3rdParty\Eigen\bin" /LIBPATH:"C:\Program Files (x86)\OpenNI\Lib" /LIBPATH:"C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib" OpenAL32.lib openNI.lib pcl_io_release.lib pcl_common_release.lib pcl_visualization_release.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /ManifestFile:"Release\3DVITA.exe.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /DEBUG /PDB:"C:\Users\Robrecht\3DVITA\Code\3dvita\Release\3DVITA.pdb" /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\Robrecht\3DVITA\Code\3dvita\Release\3DVITA.lib" /MACHINE:X86 Release\3DCamera.obj
+         Release\AudioSource.obj
          Release\main.obj
          Release\SoundManager.obj
          Generating code
@@ -22,4 +38,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:01.68
+Time Elapsed 00:00:24.41
