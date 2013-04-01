@@ -1,7 +1,7 @@
-﻿Build started 31-3-13 14:25:01.
+﻿Build started 01-4-13 14:18:22.
      1>Project "C:\Users\Robrecht\3DVITA\Code\3dvita\3DVITA\3DVITA.vcxproj" on node 2 (build target(s)).
      1>InitializeBuildStatus:
-         Creating "Release\3DVITA.unsuccessfulbuild" because "AlwaysCreate" was specified.
+         Touching "Release\3DVITA.unsuccessfulbuild".
        ClCompile:
          c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /I"C:\Users\Robrecht\Libraries\openal-soft\include" /I"C:\Program Files (x86)\PCL 1.6.0\include\pcl-1.6" /I"C:\Program Files (x86)\PCL 1.6.0\3rdParty\Boost\include" /I"C:\Program Files (x86)\PCL 1.6.0\3rdParty\Eigen\include" /I"C:\Program Files (x86)\OpenNI\Include" /I"C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\include\vtk-5.8" /Zi /nologo /W3 /WX- /O2 /Oi /Oy- /GL /D _MBCS /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc100.pdb" /Gd /TP /analyze- /errorReport:prompt 3DCamera.cpp
          3DCamera.cpp
@@ -38,4 +38,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:24.41
+Time Elapsed 00:00:27.65
