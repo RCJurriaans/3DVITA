@@ -9,7 +9,7 @@ link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 # OpenCV - Computer Vision library for image processing
-FIND_PACKAGE ( OpenCV REQUIRED core highgui)
+FIND_PACKAGE ( OpenCV REQUIRED core highgui imgproc)
 
 include_directories(${OpenCV_INCLUDE_DIRS})
 link_directories(${OpenCV_LIB_DIR} )
