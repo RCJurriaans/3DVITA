@@ -1,54 +1,27 @@
 cmake_minimum_required (VERSION 2.8)
 project (3DVITA)
 
-
-# PCL
+# PCL - Library to deal with point clouds and to use RGBD sensors with OPENNI
 find_package(PCL 1.6 REQUIRED)
 
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
+# OpenCV - Computer Vision library for image processing
+FIND_PACKAGE ( OpenCV REQUIRED core highgui)
 
-# OpenAL
-FIND_PATH(OPENAL_INCLUDE_DIR al.h
-  PATHS
-  $ENV{OPENAL-SOFT_DIR}
-  NO_DEFAULT_PATH
-  PATH_SUFFIXES include/AL include/OpenAL include
-)
+include_directories(${OpenCV_INCLUDE_DIRS})
+link_directories(${OpenCV_LIB_DIR} )
 
-FIND_LIBRARY(OPENAL_LIBRARY 
-  NAMES OpenAL al openal OpenAL32
-  PATHS
-  $ENV{OPENAL-SOFT_DIR}
-  NO_DEFAULT_PATH
-    PATH_SUFFIXES include/build/Release lib64 lib libs64 libs libs/Win32 libs/Win64
-)
+# STK - Synthesis ToolKit to generate sound
 
-include_directories(${OPENAL_INCLUDE_DIR})
-link_directories(${OPENAL_LIBRARY})
-
-# STK
-
-# Add PCL
 
 
 # Separate Executables
 add_executable(Grabber grabberMain.cpp)
-add_executable(synthesisDemo synthesisMain.cpp)
-add_executable(segmentationDemo segmentationMain.cpp)
-add_executable(audioDemo audioMain.cpp)
 
 
 # Grabber Libs
 target_link_libraries(Grabber ${PCL_LIBRARIES})
-
-# Synthesis Libs
-target_link_libraries(synthesisDemo ${PCL_LIBRARIES})
-
-# Segmentation Libs
-target_link_libraries(segmentationDemo ${PCL_LIBRARIES})
-
-# Audio Libs
-target_link_libraries(audioDemo ${OPENAL_LIBRARY})
+target_link_libraries(Grabber ${OpenCV_LIBS} )
