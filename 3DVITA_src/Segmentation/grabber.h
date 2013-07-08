@@ -38,7 +38,9 @@ private:
 	cv::Mat frameBGR;
 	cv::Mat frameD;
 	cv::Mat frameHSV;
-
+	cv::Mat frameS;
+	bool newImages;
+	bool converting;
 
 protected:
 	void retrieveImages();
@@ -47,7 +49,7 @@ protected:
 	void rgbd_cb_ ( const boost::shared_ptr<openni_wrapper::Image>      &image_in, 
 		const boost::shared_ptr<openni_wrapper::DepthImage> &depth_in, 
 		float constant_in);
-	
+
 
 
 

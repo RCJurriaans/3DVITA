@@ -5,9 +5,7 @@ SimpleOpenNIViewer::SimpleOpenNIViewer()
 
 	write_allowed = true;
 	write_done = false;
-	for(int i=0 ; i<128 ; i++){
-		sources[i] = new AudioSource();
-	}
+
 	/* initialize OpenAL context, asking for 44.1kHz to match HRIR data */
 	ALCint contextAttr[] = {ALC_FREQUENCY,44100,0};
 	device = alcOpenDevice( NULL );
@@ -28,6 +26,12 @@ SimpleOpenNIViewer::SimpleOpenNIViewer()
 	frameRGB = cv::Mat(480, 640, CV_8UC3);
 	frameBGR = cv::Mat(480, 640, CV_8UC3);;
 	frameD = cv::Mat(480, 640, CV_32F);
+	frameHSV = cv::Mat(480, 640, CV_8UC3);
+
+	for(int i=0; i<128; i++){
+		sources.push_back(new AudioSource());
+	}
+
 
 	// C E G C* E G C E G
 	notes[0] = 28;
@@ -45,6 +49,7 @@ SimpleOpenNIViewer::~SimpleOpenNIViewer()
 {
 	alcDestroyContext( context );
 	alcCloseDevice( device );
+	sources.clear();
 
 }
 
@@ -58,13 +63,9 @@ void SimpleOpenNIViewer::rgbd_cb_ ( const boost::shared_ptr<openni_wrapper::Imag
 		image_in->fillRGB(frameRGB.cols,frameRGB.rows,frameRGB.data,frameRGB.step);
 
 		cv::cvtColor(frameRGB, frameBGR, CV_RGB2BGR);
-
-		cv::Mat frameHSV;
 		cv::cvtColor(frameRGB, frameHSV, CV_RGB2HSV);
 
-
 		depth_in->fillDepthImage(frameD.cols, frameD.rows, (float*) frameD.data, frameD.step);
-
 
 		int index;
 		float note;
@@ -78,10 +79,27 @@ void SimpleOpenNIViewer::rgbd_cb_ ( const boost::shared_ptr<openni_wrapper::Imag
 
 				// Get mean hue from each cell
 				huevalues[index] =  cv::mean(segments[i+(j*16)])[0];
+				satvalues[index] =  cv::mean(segments[i+(j*16)])[1];
+				valvalues[index] =  cv::mean(segments[i+(j*16)])[2];
 
+				/*
 				// Convert the hue into a note and then into a frequency
 				int noteindex = (int) ((huevalues[index]/360.0)*8)+0.5;
 				note = notes[noteindex];
+				tonefreqs[index] = 440.f * pow(2, (( note-49) /12));
+				*/
+
+				// More elaborate method with hue and value
+				hue =  huevalues[index];
+				sat =  satvalues[index];
+				val =  valvalues[index];
+
+				tone = 0;
+				float chord[] = {0, 2, 4, 5, 7, 9, 11};
+				float octave[] = {28, 40, 52, 64, 78};
+				chordindex = (int) (((hue/360.0)*7)+0.5);
+				octaveindex = (int) (((val/360.0)*5)+0.5);
+				note = octave[octaveindex]+chord[chordindex];
 				tonefreqs[index] = 440.f * pow(2, (( note-49) /12));
 
 				// Get the depthvalue
@@ -90,15 +108,12 @@ void SimpleOpenNIViewer::rgbd_cb_ ( const boost::shared_ptr<openni_wrapper::Imag
 				//depthvalues[index] = 3;//cv::mean(frameD(cv::Range(j*60, j*60+59), cv::Range(i*40, i*40+39)))[0];
 
 				// Convert depthvalue to 3d position and generate sound
-				float location[3];
-
 				location[0] = (float)(i*40+20)*depthvalues[index] * constant_in;
 				location[1] = (float)(j*60+30)*depthvalues[index] * constant_in;
 				location[2] = depthvalues[index];
 
-
-
-				sources[index]->updateSound(location, tonefreqs[index]);
+				sources.at(index)->updateSound(location, tonefreqs[index]);
+				//sources[index]->updateSound(location, tonefreqs[index]);
 			}
 
 		}
@@ -115,33 +130,93 @@ void SimpleOpenNIViewer::playSounds()
 		if( write_done ){
 			std::cout << "Playing Sounds" << std::endl;
 			int counter = 0;
-					
-			AudioSource* test = new AudioSource();
 
-			//for(int i =32; i<96 ; i++)
-			for(int i =95; i>31 ; i--)
+			/*
+			for(int i=0; i<128; i++)
 			{
-				if(!(depthvalues[i] != depthvalues[i])){
+			if(!(depthvalues[i] != depthvalues[i])){
+			sources.at(i)->play();
+			counter++;
+			}
+			}*/
 
-					test->updateSound(sources[i]->location, sources[i]->frequency);
-					test->play();
-					//sources[i]->play();
-					//alSourcePlay( sources[i]->source );
-					counter++;
+
+			/*			for(int i=4; i<12; i++)
+			{
+			for(int j=1; j<7; j++)
+			{
+			int index = i+(j*16);
+			if(!(depthvalues[index] != depthvalues[index])){
+			cv::Mat tmp = cv::Mat(1,1,CV_8UC3);
+			cv::rectangle( frameBGR,
+			cv::Point(i*40, j*60 ),
+			cv::Point( i*40+40, j*60+60),
+			cv::Scalar( 0, 0, 0 ),
+			3,
+			8 );
+
+			sources.at(index)->play();
+			Sleep(330);
+			counter++;
+			}
+			}
+			}*/
+
+			/*
+			std::vector<int> indexes ;
+			std::vector<float> vecdepth;
+			for(int i = 0; i<sizeof(depthvalues)/sizeof(depthvalues[0]); i++){
+			if(!(depthvalues[i] != depthvalues[i])){
+			vecdepth.push_back(depthvalues[i]);
+			indexes.push_back(i);
+			}
+			}
+
+			sort (indexes.begin (), indexes.end (), compare_index (vecdepth));
+			for(std::vector<int>::size_type it = 0; it != 16; it++) {
+			int index = indexes[it];
+			int i = index%16;
+			int j = index/16;
+
+
+			//std::cout << index << " with " << it << " = " << i << ", " << j << " => " << vecdepth[index] << std::endl;
+			cv::Mat tmp = cv::Mat(1,1,CV_8UC3);
+			cv::rectangle( frameBGR,
+			cv::Point(i*40, j*60 ),
+			cv::Point( i*40+40, j*60+60),
+			cv::Scalar( 0, 0, 0 ),
+			3,
+			8 );
+
+			sources.at(index)->play();
+			//Sleep(330);
+			counter++;
+
+
+			}*/
+
+			for(int i=4; i<12; i++)
+			{
+				for(int j=1; j<7; j++)
+				{
+					int index = i+(j*16);
+					if(!(depthvalues[index] != depthvalues[index])){
+						cv::Mat tmp = cv::Mat(1,1,CV_8UC3);
+						cv::rectangle( frameBGR,
+							cv::Point(i*40, j*60 ),
+							cv::Point( i*40+40, j*60+60),
+							cv::Scalar( 0, 0, 0 ),
+							3,
+							8 );
+
+						sources.at(index)->play();
+						Sleep(330);
+						counter++;
+					}
 				}
 			}
-			/*
-			if(!(depthvalues[55] != depthvalues[55])){
-			sources[55]->play();
-			//alSourcePlay( sources[55]->source );
-			AudioSource* test = new AudioSource();
-			test->updateSound(sources[55]->location, sources[55]->frequency);
-			std::cout << test->frequency << " " << huevalues[55] << " " << depthvalues[55] << std::endl;
-			test->play();
-			Sleep(1000);
-			}
-			*/
-			Sleep(1000);
+
+			Sleep(990);
 
 			std::cout << "Played: " << counter << std::endl;
 
@@ -152,6 +227,7 @@ void SimpleOpenNIViewer::playSounds()
 		}
 	}
 }
+
 
 void SimpleOpenNIViewer::run ()
 {
@@ -172,24 +248,20 @@ void SimpleOpenNIViewer::run ()
 
 	boost::thread sound_thread(&SimpleOpenNIViewer::playSounds, this);
 
-	bool play = false;
-
-
-
 	int k = -1;
 	while (k==-1)
-	{
+	{	
+		for(int i=1; i<16; i++){
+			cv::line(frameBGR, cv::Point(i*40,0), cv::Point(i*40, 480), cv::Scalar( 0, 0, 0 ),1, 8, 0);
+		}
+		for(int j=1; j<8; j++){
+			cv::line(frameBGR, cv::Point(0,j*60), cv::Point(640, j*60), cv::Scalar( 0, 0, 0 ),1, 8, 0);
+		}
 		//boost::this_thread::sleep (boost::posix_time::seconds (2));
 		cv::imshow("input", frameBGR );
 		//cv::imshow("input", frameD );
-
-		cv::rectangle( frameBGR,
-			cv::Point(7*40, 3*60 ),
-			cv::Point( 8*40, 4*60),
-			cv::Scalar( 0, 0, 0 ),
-			3,
-			8 );
-		k = cv::waitKey(33);
+		_CrtDumpMemoryLeaks();
+		k = cv::waitKey(330);
 
 	}
 
