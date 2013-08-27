@@ -14,8 +14,8 @@
 // For image segmentation, the algorithum takes both the pixel color and
 // pixel geometric position into consideration.
 
-#ifndef DOTORG_CHILDPROTECTION_BEDSPREADS_PRODUCTION_GOOGLE_SIDE_SEGMENTATION_SUPER_PIXEL_SUPER_PIXEL_H_
-#define DOTORG_CHILDPROTECTION_BEDSPREADS_PRODUCTION_GOOGLE_SIDE_SEGMENTATION_SUPER_PIXEL_SUPER_PIXEL_H_
+#ifndef SUPER_PIXEL_H_
+#define SUPER_PIXEL_H_
 
 #include <string>
 #include <vector>
@@ -163,6 +163,8 @@ namespace ncmec {
 				delete [] gradients_;
 				gradients_ = NULL;
 			}
+			for(int i = 0; i<num_segments_; i++)
+				segments_.pop_back();
 		}
 
 		// Basically a deconstructor and constructor in 1
@@ -174,6 +176,9 @@ namespace ncmec {
 			delete [] b_values_;
 			delete [] gradients_;			
 			
+			for(int i = 0; i<num_segments_; i++)
+				segments_.pop_back();
+
 			image_ = cvCloneImage(image);
 			num_segments_ = -1;
 			width_ = image_->width;

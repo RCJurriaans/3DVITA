@@ -87,6 +87,8 @@ namespace ncmec {
 			temp_segmentation_map = NULL;
 
 			// Step 6: Generate segmentation results.
+			//segments_.clear();
+			printf("%i: %i\n", num_segments_, segments_.size());
 			for (int i = 0; i < num_segments_; ++i) {
 				Segment temp;
 				temp.center.x = 0;

@@ -1,6 +1,9 @@
-//#define _CRTDBG_MAP_ALLOC
+#ifndef GRABBER_H
+#define GRABBER_H
+
+#define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
-//#include <crtdbg.h>
+#include <crtdbg.h>
 
 #include <stdio.h>
 
@@ -25,6 +28,10 @@
 /* Segmentation */
 #include "segmentation.h"
 
+/* Sound */
+#include "audiogenerator.h"
+#include "audioObject.h"
+
 class Grabber
 {
 public:
@@ -33,6 +40,12 @@ public:
 	void run();
 
 private:
+
+	audioObject *objects;
+	audioComponents *AC;
+
+	float constant_c;
+
 	// OpenCV images
 	cv::Mat frameRGB;
 	cv::Mat frameBGR;
@@ -54,3 +67,5 @@ protected:
 
 
 };
+
+#endif
