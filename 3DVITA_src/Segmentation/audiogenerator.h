@@ -37,7 +37,7 @@ public:
 	void defaultSound(short *src);
 	void defaultSound(short *src, float frequency);
 
-	void createSound(short *src, float freq);
+	void createSound(short *src, float freq=440.0f, float attack=0.2, float decay=0.4, float release=0.6, float sustain=0.5, float strength=1);
 
 	void generateSine	(short *src,	float frequency=440, float targetlength=1.0);
 	void generateSquare	(short *src,	float frequency=440, float targetlength=1.0);

@@ -1,15 +1,8 @@
 #include "grabber.h"
 
-
 Grabber::Grabber(){
+	_CrtSetReportMode( _CRT_WARN, _CRTDBG_MODE_DEBUG );
 	cv::namedWindow("input", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO);
-
-	AC = new audioComponents();
-	AC->createSoundEngine();
-
-	//for(int i = 0; i<128; i++){
-		objects = new audioObject[128];
-	//}
 
 	// Relevant images
 	frameRGB = cv::Mat(480, 640, CV_8UC3);
@@ -22,7 +15,7 @@ Grabber::Grabber(){
 }
 
 Grabber::~Grabber(){
-	AC->destroySoundEngine();
+	//	AC->destroySoundEngine();
 	cv::destroyAllWindows();
 }
 
@@ -48,7 +41,6 @@ void Grabber::run ()
 	const int* seg_map;
 	seg_map = new int[640*480];
 
-
 	int clusters = 128;
 	int m = 20;
 
@@ -61,12 +53,15 @@ void Grabber::run ()
 	{	
 		if(newImages){
 			converting = true;
+
+			//frameBGR = cv::imread("C:\\Users\\Robrecht\\3DVITA\\3DVITA_src\\Segmentation\\miro.jpg", CV_LOAD_IMAGE_COLOR);
+			//cv::resize(frameBGR, frameBGR, cv::Size(640,480));
 			ipl_img = frameBGR;
 			sp->updateImage(&ipl_img);		
 			sp->SegmentNumber(clusters, m);
 			segs = sp->segments();
 			num_segs = sp->num_segments();
-			
+
 			seg_map = sp->segmentation_map();
 			// Move segmentation map into a Mat structure
 			for(int i=0; i<480*640; i++){
@@ -80,59 +75,78 @@ void Grabber::run ()
 
 			int notes[12] = {30,32,33,35,37,39,40,42,44,45,47,49};
 
+			std::vector<std::vector<int> > slices;
+			slices.resize(33);
+
 			for(int i=0; i<std::min(128,sp->num_segments()); i++){
 				cv::Scalar hsv = mean(frameHSV, frameS==i);
-				M = cv::Mat(480, 640, CV_8UC3, hsv);//cv::Scalar(hsv[0],255,255,125));
+				M = cv::Mat(480, 640, CV_8UC3,  hsv);//cv::Scalar(hsv[0],255,255,125));
 
 				// Create Sound
 				float depth = frameD.at<float>(segs[i].center);
 				if(depth!=depth){
-										objects[i].location[2] = depth;
+					//						objects[i].location[2] = depth;
 				} else{
 					float location[3] = {(int)(segs[i].center.x)*depth* constant_c, segs[i].center.y*depth*constant_c, depth};
-					//printf("location: %f\t%f\t%f\t", location[0], location[1], location[2]);
-					float overtones[5] = {1, 0.8, 0.6, 0.4, 0.2};
-					objects[i].setParams(overtones);
-					//printf("hue: %f\t", hsv[0]);
-					int noteind = (int)((hsv[0]/180.0f)*12);
-					//printf("%i\t", notes[noteind]);
-					float freq = 440.f * pow(2.0f, (((float)notes[noteind]-49.0f) /12.0f));
-					//printf("%f\n", freq);
-					objects[i].params.attack = hsv[1]/255.0f;
-					AC->createSound(objects[i].audioData, freq);
+					audio::audioParams params;
+					///* Hue Names: http://www.procato.com/rgb+index/
+					// *   0 = Red		392
+					// *  30 = Orange	440
+					// *  60 = Yellow	466.16
+					// * 120 = Green	523.25
+					// * 180 = Cyan		554.37
+					// * 240 = Blue		587.33
+					// * 300 = Magenta	698.46
+					// * 360 = Red
+					// * Frequency adjusted to scale based on A4=440.f
+					// */
+					float tones[7] = {392, 440, 466.16, 523.25, 554.37, 587.33, 698.46};
+					params.freq = tones[(int)((hsv[0]/255)*7)];
 
-					objects[i].updateSound(location, objects[i].audioData);
+					slices[std::min(19, (int)(depth*3.3))].push_back(AE.sounds.size());
+					AE.createSound(params, location);
 				}
 
 				M.copyTo(frameBGR, frameS==i);
 				M.release();
 			}
 			printf("playing sounds\n");
-			
+
 			cv::cvtColor(frameBGR, frameBGR, CV_HSV2BGR);
 
-			for(int i=0; i<std::min(128,sp->num_segments()); i++){
-				//printf("%i: %f\t", i, objects[i].location[2]);
-				printf("%i, %i, %f\n", segs[i].center.x, segs[i].center.y, objects[i].location[2]); 
-				if(objects[i].location[2]!=objects[i].location[2]){
-					cv::circle(frameBGR, segs[i].center, 5, cv::Scalar( 0, 0, 0 ), -1 , 8);
-					continue;
+			for(int j=0; j<slices.size(); j++){
+				for(int k =0; k<slices[j].size(); k++){
+					int i = slices[j][k];
+						if(AE.sounds[i].location[2]!=AE.sounds[i].location[2]){
+							cv::circle(frameBGR, segs[i].center, 5, cv::Scalar( 0, 0, 0 ), -1 , 8);
+						}else {
+							cv::circle(frameBGR, segs[i].center, (10.0f/ AE.sounds[i].location[2]), cv::Scalar( 0, 0, 255 ), -1 , 8);
+							alSourcePlay( AE.sounds[i].source );
+						//cv::imshow("input", frameBGR );
+						//cv::waitKey(110);
+						}
 				}
-				
-				cv::circle(frameBGR, segs[i].center, (10.0f/objects[i].location[2]), cv::Scalar( 0, 0, 255 ), -1 , 8);
-				objects[i].playSound();
-				//cv::imshow("input", frameBGR );
-				//cv::waitKey(250);
+				cv::imshow("input", frameBGR );
+				//std::cout << slices[j].size() << std::endl;
+				cv::waitKey(1000 * ((slices[j].size())/(float)sp->num_segments() )+1);
+				slices[j].clear();
 			}
+			slices.clear();
+			for(int i = 0; i<AE.sounds.size(); i++){
+				alDeleteSources( 1, &AE.sounds[i].source );
+				alDeleteBuffers( 1, &AE.sounds[i].buffer );
+			}
+			AE.sounds.clear();
 
-			if (!drawing)
+			if (drawing)
 				sp->DrawContours(color);
 			else
 				cv::imshow("input", frameBGR );
 
+
 			converting=false;
 			newImages=false;		
-			k = cv::waitKey(330);
+			k = cv::waitKey(1);
 
 		}
 
@@ -189,7 +203,7 @@ void Grabber::run ()
 			break;
 
 		}
-
+		segs.clear();
 
 	}
 
@@ -217,43 +231,43 @@ void Grabber::rgbd_cb_ ( const boost::shared_ptr<openni_wrapper::Image>      &im
 
 int main ()
 {
-
-
 	cv::namedWindow("input", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO);
-
-
-
 	Grabber v;
 	v.run ();
 
-	/*
-	audioComponents *AC = new audioComponents();
-
-	int notes[8] = {28,32,35,40,44,47,52,56};
-	float freq = 480;
-	short *data = new short[44100];
-	AC->defaultSound(data, freq);
-
-	int noteind = 0;
-	int note= 0;
-
-	audioObject *sound;
-
-	while(noteind<64){
-
-	note = notes[noteind%8];
-	freq = 440.f * pow(2.0f, (( note-49) /12.0f));
-	AC->defaultSound(data, freq);
-	sound = new audioObject(data);
-	sound->playSound();
-	noteind = (noteind+1);
-	cv::waitKey(330);
-	}
-
-
-
-
-	*/
-	_CrtDumpMemoryLeaks();
+	//_CrtDumpMemoryLeaks();
 	return (0);
+	//int tst;
+	//std::cin >> tst;
+
+	//audio::audioParams params;
+	//params.freq = 440.f;
+	//params.attack = 0.1;
+	//params.decay = 0.1;
+	//params.release = 0.1;
+	//params.sustain = 0.1;
+	//params.texture = 0.1;
+	//params.dampThres = 0.5;
+	//params.overtone_amps.push_back(0.9);
+	//params.overtone_amps.push_back(0.3);
+	//params.overtone_amps.push_back(0.9);
+	//params.overtone_amps.push_back(0.3);
+
+	///* Hue Names: http://www.procato.com/rgb+index/
+	// *   0 = Red		392
+	// *  30 = Orange	440
+	// *  60 = Yellow	466.16
+	// * 120 = Green	523.25
+	// * 180 = Cyan		554.37
+	// * 240 = Blue		587.33
+	// * 300 = Magenta	698.46
+	// * 360 = Red
+	// * Frequency adjusted to scale based on A4=440.f
+	// */
+	//std::map<int, int> colorBins;
+	//
+
+	//for(int i =0; i<tst; i++)
+	//		AE.createSound(params);
+	//AE.playSounds();
 }

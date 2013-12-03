@@ -21,7 +21,7 @@ include_directories(${OPENAL_INCLUDE_DIR})
 link_directories(${OPENAL_LIBRARY})
 
 # Separate Executables
-add_executable(Grabber grabber.cpp grabber.h segmentation.cpp segmentation.h audiogenerator.cpp audiogenerator.h audioObject.cpp audioObject.h)
+add_executable(Grabber grabber.cpp grabber.h segmentation.cpp segmentation.h audioEngine.cpp audioEngine.h)
 
 # Grabber Libs
 target_link_libraries(Grabber ${PCL_LIBRARIES})

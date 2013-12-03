@@ -41,13 +41,14 @@ audioObject::audioObject(short *data)
 	alGenSources( 1, &source );
 	alSourcef( source, AL_PITCH, 1. );
 	alSourcef( source, AL_GAIN, 1. );
-	alSource3f( source, AL_POSITION, location[0],location[1],location[2] );
+	alSource3f( source, AL_POSITION, location[0], location[1], location[2] );
 	alSource3f( source, AL_VELOCITY, 0.,0.,0. );
 	alSourcei( source, AL_LOOPING, AL_FALSE );
 
 	alGenBuffers( 1, &buffer );
 	//audioData = data;
-std::copy(data, data+44100, audioData);
+	
+	std::copy(data, data+44100, audioData);
 	alBufferData( buffer, AL_FORMAT_MONO16, audioData, 44100, 44100 );
 	alSourcei( source, AL_BUFFER, buffer );	
 

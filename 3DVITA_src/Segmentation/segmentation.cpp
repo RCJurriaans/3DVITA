@@ -52,7 +52,13 @@ namespace ncmec {
 			// Step 0: initialization.
 			int const kTotalPixelNum = width_ * height_;
 			int* temp_segmentation_map = new int[kTotalPixelNum];
+
+			delete [] segmentation_map_;
 			segmentation_map_ = new int[kTotalPixelNum];
+			delete [] l_values_;
+			delete [] a_values_;
+			delete [] b_values_;
+			delete [] gradients_;
 			l_values_ = new float[kTotalPixelNum];
 			a_values_ = new float[kTotalPixelNum];
 			b_values_ = new float[kTotalPixelNum];

@@ -1,13 +1,13 @@
 #ifndef GRABBER_H
 #define GRABBER_H
 
-#define _CRTDBG_MAP_ALLOC
+//#define _CRTDBG_MAP_ALLOC
+//#include <crtdbg.h>
+
 #include <stdlib.h>
-#include <crtdbg.h>
-
 #include <stdio.h>
-
 #include <iostream>
+#include "vector"
 
 /* PCL headers */
 #include <pcl/point_cloud.h>
@@ -28,9 +28,13 @@
 /* Segmentation */
 #include "segmentation.h"
 
+#include "audioEngine.h"
+
 /* Sound */
-#include "audiogenerator.h"
-#include "audioObject.h"
+//#include "audiogenerator.h"
+//#include "audioObject.h"
+
+
 
 class Grabber
 {
@@ -40,11 +44,7 @@ public:
 	void run();
 
 private:
-
-	audioObject *objects;
-	audioComponents *AC;
-
-	float constant_c;
+	audio::audioEngine AE;
 
 	// OpenCV images
 	cv::Mat frameRGB;
@@ -52,6 +52,8 @@ private:
 	cv::Mat frameD;
 	cv::Mat frameHSV;
 	cv::Mat frameS;
+	float constant_c;
+	
 	bool newImages;
 	bool converting;
 
@@ -62,9 +64,6 @@ protected:
 	void rgbd_cb_ ( const boost::shared_ptr<openni_wrapper::Image>      &image_in, 
 		const boost::shared_ptr<openni_wrapper::DepthImage> &depth_in, 
 		float constant_in);
-
-
-
 
 };
 

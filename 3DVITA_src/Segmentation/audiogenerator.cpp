@@ -2,7 +2,7 @@
 
 	audioComponents::audioComponents(){
 		samplerate = 44100;
-		amplitude = 15000;
+		amplitude = 1000;
 	}
 
 	audioComponents::~audioComponents(){
@@ -142,11 +142,11 @@
 			output[i] = input[i]-min[i];
 	}
 
-	void audioComponents::createSound(short *src, float freq){
+	void audioComponents::createSound(short *src, float freq, float attack, float decay, float release, float sustain, float strength){
 		generateSine(src, freq, 1.0f);
 		addOvertones(src, freq);
-		addNoise(src, 1000);
-		adrs(src);
+		addNoise(src, strength);
+		adrs(src, attack, attack+0.2, attack+0.2, sustain);
 	}
 
 
