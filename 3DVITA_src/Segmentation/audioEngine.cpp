@@ -74,6 +74,14 @@ namespace audio{
 #else
 			int maxVal = 5000;
 #endif
+			// Low Pass Filter
+			float RC = ((1-params.dampThres)*500)/44100.f;
+			float dt = 1/44100.f;
+			float alpha = dt/(RC+dt);
+		//	printf("RC = %f \t dt = %f \t alpha = %f\n", RC, dt, alpha);
+			if(i>0){
+				audioData[i] = alpha*audioData[i] + (1-alpha)*audioData[i-1];
+			}
 
 			//if(audioData[i] > maxVal-((maxVal/3)))
 		//		audioData[i] = maxVal+((maxVal/3)*log(compress));
