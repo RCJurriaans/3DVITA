@@ -1,8 +1,16 @@
 #include "grabber.h"
 
 Grabber::Grabber(){
-	_CrtSetReportMode( _CRT_WARN, _CRTDBG_MODE_DEBUG );
+	//_CrtSetReportMode( _CRT_WARN, _CRTDBG_MODE_DEBUG );
 	cv::namedWindow("input", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO);
+	keys = new char[256];
+	oldkeys = new char[256];
+	for (int x = 0; x < 256; x++){
+		keys[x] = 0;
+		oldkeys[x] = 0;
+	}
+
+	screenNo = 0;
 
 	// Relevant images
 	frameRGB = cv::Mat(480, 640, CV_8UC3);
@@ -10,7 +18,22 @@ Grabber::Grabber(){
 	frameD   = cv::Mat(480, 640, CV_32F);
 	frameHSV = cv::Mat(480, 640, CV_8UC3);
 	frameS   = cv::Mat(480, 640, CV_8U);
-	newImages = true;
+	newImages = false;
+	converting = false;
+
+	// Control Program
+	control.running = true;
+	control.drawImage = true;
+	control.music = false;
+	control.verbose = false;
+
+	// Control Features;
+	control.color = true;
+	control.saturation = true;
+	control.texture = true;
+	control.depth = true;
+
+	control.screenshot = false;
 
 }
 
@@ -30,7 +53,17 @@ void Grabber::run ()
 	boost::signals2::connection c = interface->registerCallback (rgbd);
 
 	// Start the interface
+	Sleep(500);
+	printf("Starting Interface\n");
 	interface->start();
+	printf("Started Interface\n");
+	while(!newImages){
+		Sleep(10);
+	}
+	printf("There is an incoming image\n");
+
+	// Connect keyListener callback
+	boost::thread keyListen(&Grabber::keyListener, this);
 
 	IplImage ipl_img;
 	CvScalar color = CV_RGB(255, 0, 0);
@@ -45,11 +78,8 @@ void Grabber::run ()
 	int m = 20;
 
 	int drawing = 1;
-	bool running = true;
-
 	// Thread runs forever until stop
-	char k = ' ';
-	while (running)
+	while (control.running)
 	{	
 		if(newImages){
 			converting = true;
@@ -78,31 +108,106 @@ void Grabber::run ()
 			std::vector<std::vector<int> > slices;
 			slices.resize(33);
 
-			for(int i=0; i<std::min(128,sp->num_segments()); i++){
-				cv::Scalar hsv = mean(frameHSV, frameS==i);
-				M = cv::Mat(480, 640, CV_8UC3,  hsv);//cv::Scalar(hsv[0],255,255,125));
+			int num_seg = sp->num_segments();
 
+
+			std::vector<cv::Mat> hsv_planes;
+			cv::split(frameHSV, hsv_planes);
+#ifdef FREQHISTO
+			cv::Mat histograms =  cv::Mat::zeros(num_seg, 6, CV_32S);
+			for(int i=0; i<480*640; i++){
+				int x = hsv_planes[0].data[i];
+				int segNo = frameS.data[i];
+				if(x<15)
+					histograms.at<int>(segNo,0)++;
+				else if(x<45)
+					histograms.at<int>(segNo,1)++;
+				else if(x<90)
+					histograms.at<int>(segNo,2)++;
+				else if(x<180)
+					histograms.at<int>(segNo,3)++;
+				else if(x<270)
+					histograms.at<int>(segNo,4)++;
+				else if(x<315)
+					histograms.at<int>(segNo,5)++;
+				else
+					histograms.at<int>(segNo,0)++;
+			}
+
+#else
+			std::vector<float> cosSum  (num_seg, 0.0);
+			std::vector<float> sinSum  (num_seg, 0.0);
+			std::vector<float> hueMean (num_seg, 0.0);
+			for(int i=0; i<480*640; i++){
+				//printf("%i -> hsv_val: %i, %f, %f, %f\n", frameS.data[i], hsv_planes[0].data[i], hsv_planes[0].data[i]/255.f, hsv_planes[0].data[i]/255.f, ((float)hsv_planes[0].data[i]/255.f)*360.f);
+				//cosSum[frameS.data[i]] += cos((((float)hsv_planes[0].data[i]/255.f)*360.f)*M_PI/180.f);
+				//sinSum[frameS.data[i]] += sin((((float)hsv_planes[0].data[i]/255.f)*360.f)*M_PI/180.f);
+				cosSum[frameS.data[i]] += cos((float)hsv_planes[0].data[i]*M_PI/180.0);
+				sinSum[frameS.data[i]] += sin((float)hsv_planes[0].data[i]*M_PI/180.0);
+			}
+
+			for(int i =0; i<hueMean.size(); i++){
+				hueMean[i] = atan2(sinSum[i], cosSum[i])*180.0/M_PI;
+			}
+			cosSum.clear();
+			sinSum.clear();
+#endif
+			hsv_planes.clear();
+
+			for(int i=0; i<std::min(128, sp->num_segments()); i++){
+				cv::Scalar hsv = mean(frameHSV, frameS==i);
+#ifndef FREQHISTO
+				M = cv::Mat(480, 640, CV_8UC3,  cv::Scalar(hueMean[i], hsv[1], hsv[2]));
+#else
+				M = cv::Mat(480, 640, CV_8UC3,  hsv);
+#endif
 				// Create Sound
 				float depth = frameD.at<float>(segs[i].center);
+				if(!control.depth)
+					depth = 2.f+ (sqrt( (pow(segs[i].center.x-320.f, 2) + pow(segs[i].center.y-240.f,2)))/100.f);
 				if(depth!=depth){
 					//						objects[i].location[2] = depth;
 				} else{
 					float location[3] = {(int)(segs[i].center.x)*depth* constant_c, segs[i].center.y*depth*constant_c, depth};
 					audio::audioParams params;
 					///* Hue Names: http://www.procato.com/rgb+index/
-					// *   0 = Red		392
-					// *  30 = Orange	440
-					// *  60 = Yellow	466.16
-					// * 120 = Green	523.25
-					// * 180 = Cyan		554.37
-					// * 240 = Blue		587.33
-					// * 300 = Magenta	698.46
+					// *   0 = Red			392		G4
+					// *  30 = Orange		440		A4
+					// *  60 = Yellow		466.16 Bb4
+					// *  90 = Chartreuse	494		B4
+					// * 120 = Green		523.25	C5
+					// * 150 = Green		523.25
+					// * 180 = Cyan			554.37	Db5
+					// * 210 = Blue			587.33	D5
+					// * 240 = Blue			587.33
+					// * 270 = Violet		659.25	E5
+					// * 300 = Magenta		698.46	F5
+					// * 330 = Red
 					// * 360 = Red
 					// * Frequency adjusted to scale based on A4=440.f
 					// */
-					float tones[7] = {392, 440, 466.16, 523.25, 554.37, 587.33, 698.46};
-					params.freq = tones[(int)((hsv[0]/255)*7)];
+					//float tones[13] = {392, 440, 466.16, 493.88, 523.25, 523.25, 554.37, 587.33, 587.33, 659.25, 698.46, 392, 392};
+					float tones[6] = {392, 466.16, 523.25, 554.37, 587.33, 698.46};
+					//params.freq = tones[(int)((hsv[0]/255)*7)];
+					if(control.verbose){
+#ifndef FREQHISTO
+						printf("%i,\t %f,\t %i,\t %f\n", i, hueMean[i], (int)(hueMean[i]/360.0)*6, tones[(int)(((hueMean[i]/360.0))*6)]);				
+#endif
+					}
+					float brightness = 1.0f;
+					if(((int)((hsv[2]/255)*3))==0)
+						brightness = 0.5f;
+					else if(((int)((hsv[2]/255)*3))==2)
+						brightness = 2.0f;
+#ifndef FREQHISTO
+					params.freq = tones[(int)(((hueMean[i]/360.0))*6)]*brightness;
+#else
+					histograms.row(i).copyTo(params.freqMat);
+#endif
+					params.dampThres = hsv[1]/255;
+					//params.freqMat = histograms;
 
+					depth = std::min(std::max(depth, 0.5f), 8.0f);
 					slices[std::min(19, (int)(depth*3.3))].push_back(AE.sounds.size());
 					AE.createSound(params, location);
 				}
@@ -110,127 +215,91 @@ void Grabber::run ()
 				M.copyTo(frameBGR, frameS==i);
 				M.release();
 			}
-			printf("playing sounds\n");
+			if(control.verbose)
+				printf("playing sounds\n");
 
 			cv::cvtColor(frameBGR, frameBGR, CV_HSV2BGR);
 
 			for(int j=0; j<slices.size(); j++){
 				for(int k =0; k<slices[j].size(); k++){
 					int i = slices[j][k];
-						if(AE.sounds[i].location[2]!=AE.sounds[i].location[2]){
-							cv::circle(frameBGR, segs[i].center, 5, cv::Scalar( 0, 0, 0 ), -1 , 8);
-						}else {
-							cv::circle(frameBGR, segs[i].center, (10.0f/ AE.sounds[i].location[2]), cv::Scalar( 0, 0, 255 ), -1 , 8);
-							alSourcePlay( AE.sounds[i].source );
-						//cv::imshow("input", frameBGR );
-						//cv::waitKey(110);
+					if(AE.sounds[i].location[2]!=AE.sounds[i].location[2]){
+						cv::circle(frameBGR, segs[i].center, 5, cv::Scalar( 0, 0, 0 ), -1 , 8);
+					}else {
+						cv::circle(frameBGR, segs[i].center, (10.0f/ AE.sounds[i].location[2]), cv::Scalar( 0, 0, 255 ), -1 , 8);
+						alSourcePlay( AE.sounds[i].source );
+						if(control.music){
+							if(control.drawImage)
+								cv::imshow("input", frameBGR );
+							cv::waitKey(250);
 						}
+					}
 				}
-				cv::imshow("input", frameBGR );
+				if(control.drawImage)
+					cv::imshow("input", frameBGR );
 				//std::cout << slices[j].size() << std::endl;
 				cv::waitKey(1000 * ((slices[j].size())/(float)sp->num_segments() )+1);
 				slices[j].clear();
 			}
 			slices.clear();
+#ifndef FREQHISTO
+			hueMean.clear();
+#endif
 			for(int i = 0; i<AE.sounds.size(); i++){
 				alDeleteSources( 1, &AE.sounds[i].source );
 				alDeleteBuffers( 1, &AE.sounds[i].buffer );
 			}
 			AE.sounds.clear();
 
-			if (drawing)
-				sp->DrawContours(color);
-			else
-				cv::imshow("input", frameBGR );
-
+			if (control.drawImage)
+				cv::imshow("input", frameBGR );				
 
 			converting=false;
 			newImages=false;		
-			k = cv::waitKey(1);
-
-		}
-
-		switch (k) {
-		case 'q':
-			running = false;
-			break;
-		case 'c':
-			std::cout << "Input number of clusters:" << std::endl;
-			std::cin >> clusters;
-			break;
-		case 'm':
-			std::cout << "Input weight m:" << std::endl;
-			std::cin >> m;
-			break;
-		case 'd':
-			if (drawing){
-				drawing = 0;
-				std::cout << "Stop drawing contours" << std::endl;
-			}else{
-				drawing = 1;
-				std::cout << "Start drawing contours" << std::endl;
-			}
-			break;
-		case '1':
-			clusters -= 1;
-			std::cout << "new clusters: " << clusters << std::endl;
-			break;
-		case '2':
-			clusters += 1;
-			std::cout << "new clusters: " << clusters << std::endl;
-			break;
-		case '3':
-			m -= 1;
-			std::cout << "new m: " << m << std::endl;
-			break;
-		case '4':
-			m += 1;
-			std::cout << "new m: " << m << std::endl;
-			break;
-		case 'h':
-			std::cout << "q: to exit program" << std::endl;
-			std::cout << "h: displays this text" << std::endl;
-			std::cout << "c: to change input cluster count" << std::endl;
-			std::cout << "m: to change weight m" << std::endl;
-			std::cout << "r: resets to default values" << std::endl;
-			std::cout << "d: starts/stops drawing contours" << std::endl;
-			break;
-		case 'r':
-			std::cout << "Resetting " << std::endl;
-			drawing = 1;
-			clusters = 128;
-			m = 20;
-			break;
+			cv::waitKey(10);
 
 		}
 		segs.clear();
-
 	}
 
 	sp->~SuperPixel();
-
 	interface->stop ();
 }
 
-void Grabber::rgbd_cb_ ( const boost::shared_ptr<openni_wrapper::Image>      &image_in, 
-	const boost::shared_ptr<openni_wrapper::DepthImage> &depth_in, 
-	float constant_in) 
+void Grabber::rgbd_cb_ ( const boost::shared_ptr<openni_wrapper::Image> &image_in, 
+	const boost::shared_ptr<openni_wrapper::DepthImage> &depth_in, float constant_in) 
 {
 	constant_c = constant_in;
 	// Retrieve color image
 	image_in->fillRGB(frameRGB.cols,frameRGB.rows,frameRGB.data,frameRGB.step);
+
+	if(control.screenshot){
+			cv::Mat frameSave;
+			cv::cvtColor(frameRGB, frameSave, CV_RGB2BGR);
+			printf("Take ScreenShot\n");
+			std::ostringstream oss; 
+			oss << "C:/Users/Robrecht/3DVITA/3DVITA_src/Segmentation/user/image_" << screenNo << ".png";
+			imwrite(oss.str(), frameSave);
+			screenNo++;
+			frameSave.release();
+			control.screenshot = false;
+		}
+
 	if(!converting){
-		cv::cvtColor(frameRGB, frameBGR, CV_RGB2BGR);
+		printf("CONVERTING\n");
+		cv::cvtColor(frameRGB, frameBGR, CV_RGB2BGR);	
 		cv::cvtColor(frameRGB, frameHSV, CV_RGB2HSV);
 		newImages = true;
 	}
 
 	// Retrieve depth image
 	depth_in->fillDepthImage(frameD.cols, frameD.rows, (float*) frameD.data, frameD.step);
+	Sleep(11);
 }
 
 int main ()
 {
+
 	cv::namedWindow("input", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO);
 	Grabber v;
 	v.run ();

@@ -8,6 +8,8 @@
 #define _USE_MATH_DEFINES
 #include <math.h>    /* for sqrtf() */
 
+#define FREQHISTO
+
 /* OpenAL headers */
 #include <al.h>
 #include <alc.h>
@@ -24,7 +26,11 @@
 namespace audio{
 
 	struct audioParams{
+#ifdef FREQHISTO
+		cv::Mat freqMat;
+#else
 		float freq;
+#endif
 		float attack;
 		float decay;
 		float release;
