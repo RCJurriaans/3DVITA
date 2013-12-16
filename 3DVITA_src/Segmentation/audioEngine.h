@@ -36,6 +36,7 @@ namespace audio{
 		float release;
 		float sustain;
 		float dampThres;
+		float brightness;
 		float texture;
 		std::vector<float> overtone_amps; 
 	};

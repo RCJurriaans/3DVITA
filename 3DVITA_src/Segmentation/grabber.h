@@ -4,8 +4,6 @@
 //#define _CRTDBG_MAP_ALLOC
 //#include <crtdbg.h>
 
-
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
@@ -27,7 +25,9 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include <boost\thread.hpp>
+#include <boost/thread.hpp>
+#include <boost/progress.hpp>
+#include <boost/date_time.hpp>
 
 /* Segmentation */
 #include "segmentation.h"
@@ -63,6 +63,9 @@ public:
 	void run();
 
 private:
+	int m;
+	int tmp_clusters;
+
 	char* keys;
 	char* oldkeys;
 	void keyListener(){

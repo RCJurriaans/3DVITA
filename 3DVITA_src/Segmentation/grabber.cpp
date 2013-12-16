@@ -3,6 +3,17 @@
 Grabber::Grabber(){
 	//_CrtSetReportMode( _CRT_WARN, _CRTDBG_MODE_DEBUG );
 	cv::namedWindow("input", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO);
+
+	 /// Create Trackbars
+	char TrackbarName[50];
+	char TrackbarName2[50];
+	sprintf( TrackbarName, "M: %d", 100 );
+	m = 20;
+	cv::createTrackbar( TrackbarName, "input", &m, 200 );
+	tmp_clusters=64;
+	sprintf( TrackbarName2, "C: %d", 256 );
+	cv::createTrackbar( TrackbarName2, "input", &tmp_clusters, 512 );
+
 	keys = new char[256];
 	oldkeys = new char[256];
 	for (int x = 0; x < 256; x++){
@@ -74,20 +85,40 @@ void Grabber::run ()
 	const int* seg_map;
 	seg_map = new int[640*480];
 
-	int clusters = 128;
-	int m = 20;
-
 	int drawing = 1;
 	// Thread runs forever until stop
 	while (control.running)
-	{	
+	{
+				
 		if(newImages){
+			boost::progress_timer timer;
 			converting = true;
 
-			//frameBGR = cv::imread("C:\\Users\\Robrecht\\3DVITA\\3DVITA_src\\Segmentation\\miro.jpg", CV_LOAD_IMAGE_COLOR);
+			//frameBGR = cv::imread("C:\\Users\\Robrecht\\3DVITA\\3DVITA_src\\Segmentation\\malevich.jpg", CV_LOAD_IMAGE_COLOR);
 			//cv::resize(frameBGR, frameBGR, cv::Size(640,480));
+			
+			// Calculate texturedness by comparing to local area
+			cv::Mat edges;
+			cv::Mat frameGrey, frameGreyBlur;
+			cv::cvtColor(frameBGR, frameGrey, CV_BGR2GRAY);
+			cv::blur(frameGrey, frameGreyBlur, cv::Size(9,9));
+			edges = abs(frameGrey-frameGreyBlur);
+		//	imshow("TEST", edges);
+		//	cv::waitKey(33);
+			frameGrey.release();
+			frameGreyBlur.release();
+
 			ipl_img = frameBGR;
-			sp->updateImage(&ipl_img);		
+		
+			sp->updateImage(&ipl_img);	
+			
+			
+
+			int clusters = 64;
+			if(tmp_clusters>31)
+				clusters = tmp_clusters;
+			else
+				clusters = 32;
 			sp->SegmentNumber(clusters, m);
 			segs = sp->segments();
 			num_segs = sp->num_segments();
@@ -98,6 +129,7 @@ void Grabber::run ()
 				frameS.data[i] = seg_map[i];
 			}
 
+			
 			cv::Mat M;
 			// Calculate mean HSV for each segment
 			frameBGR.release();
@@ -109,8 +141,6 @@ void Grabber::run ()
 			slices.resize(33);
 
 			int num_seg = sp->num_segments();
-
-
 			std::vector<cv::Mat> hsv_planes;
 			cv::split(frameHSV, hsv_planes);
 #ifdef FREQHISTO
@@ -153,9 +183,17 @@ void Grabber::run ()
 			sinSum.clear();
 #endif
 			hsv_planes.clear();
-
-			for(int i=0; i<std::min(128, sp->num_segments()); i++){
+			int maxTex = 0;
+			for(int i=0; i<std::min(clusters, sp->num_segments()); i++){
 				cv::Scalar hsv = mean(frameHSV, frameS==i);
+				
+				//cv::Mat tmpEdges;
+				//edges.copyTo(tmpEdges, frameS==i);
+				//cv::Scalar texture = cv::sum(tmpEdges);
+				cv::Scalar texture = mean(edges, frameS==i);
+				//tmpEdges.release();
+			//	std::cout << "cluster " << i << " has sum of " << texture[0] << " and Max is " << maxTex << std::endl;
+
 #ifndef FREQHISTO
 				M = cv::Mat(480, 640, CV_8UC3,  cv::Scalar(hueMean[i], hsv[1], hsv[2]));
 #else
@@ -195,10 +233,11 @@ void Grabber::run ()
 #endif
 					}
 					float brightness = 1.0f;
-					if(((int)((hsv[2]/255)*3))==0)
+					if(((int)((hsv[2]/255.f)*3))==0)
 						brightness = 0.5f;
-					else if(((int)((hsv[2]/255)*3))==2)
+					else if(((int)((hsv[2]/255.f)*3))==2)
 						brightness = 2.0f;
+					params.brightness = brightness;
 #ifndef FREQHISTO
 					params.freq = tones[(int)(((hueMean[i]/360.0))*6)]*brightness;
 #else
@@ -206,6 +245,11 @@ void Grabber::run ()
 #endif
 					params.dampThres = hsv[1]/255;
 					//params.freqMat = histograms;
+					params.texture = texture[0]/50.f;
+					params.attack	= 0.1;
+					params.decay	= 0.5;
+					params.release	= 0.7;
+					params.sustain	= 0.3;
 
 					depth = std::min(std::max(depth, 0.5f), 8.0f);
 					slices[std::min(19, (int)(depth*3.3))].push_back(AE.sounds.size());
@@ -256,7 +300,7 @@ void Grabber::run ()
 
 			converting=false;
 			newImages=false;		
-			cv::waitKey(10);
+			cv::waitKey(1);
 
 		}
 		segs.clear();
