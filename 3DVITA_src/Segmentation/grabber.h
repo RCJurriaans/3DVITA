@@ -1,6 +1,17 @@
 #ifndef GRABBER_H
 #define GRABBER_H
 
+/* TODODODODODODo
+V. Separate playing sounds from main loop so that during playback the next batch can be handled
+V. Improve binning of hue values
+V. Improve sound playing of chords with different amplitudes for different tones
+V. Improve Visual Stuff
+5. Get visual stuff in a define so that it does not take up everything
+V. Save more stuff upon screenshot
+V. Pretend everything is fine to everyone, do not let them smell your fear
+X. Do not read point 7 if you are not me
+*/
+
 //#define _CRTDBG_MAP_ALLOC
 //#include <crtdbg.h>
 
@@ -61,10 +72,15 @@ public:
 	Grabber();
 	~Grabber();
 	void run();
+	void updateFrame();
 
 private:
 	int m;
 	int tmp_clusters;
+	
+
+
+	void playSounds(std::vector<std::vector<int> > tmpSlices, std::vector<audio::audioObject> tmpSounds, std::vector<cv::Point> tmpCenters, int numSeg);
 
 	char* keys;
 	char* oldkeys;
@@ -149,10 +165,16 @@ private:
 	cv::Mat frameD;
 	cv::Mat frameHSV;
 	cv::Mat frameS;
+
+	// Drawing
+	cv::Mat tmpFrame;
+	bool updateImage;
+
 	float constant_c;
 	
 	bool newImages;
 	bool converting;
+	bool playing;
 
 protected:
 	void retrieveImages();

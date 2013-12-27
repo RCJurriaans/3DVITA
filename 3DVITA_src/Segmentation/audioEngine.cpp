@@ -27,9 +27,11 @@ namespace audio{
 	void audioEngine::createSound(audioParams params, float loc[3]){
 		audioObject tmp;
 
-		int amplitude = 7000;
+		tmp.data = new short[44100];
 
-		short* audioData = new short[44100];
+		int amplitude = 9000;
+
+		//short* audioData = new short[44100];
 		//float location[3] = {0,0,3};
 		tmp.location[0] = loc[0];
 		tmp.location[1] = loc[1];
@@ -41,40 +43,51 @@ namespace audio{
 		cv::Mat tmpFreqs = cv::Mat(1, 6, CV_32F);
 		params.freqMat.convertTo(tmpFreqs, CV_32F);
 		tmpFreqs = tmpFreqs / (float)(sum(params.freqMat)[0]);
+
+		// Threshold notes
+		cv::threshold( tmpFreqs, tmpFreqs, 0.25, 1, 3 );
+		tmpFreqs = tmpFreqs / (float)(sum(params.freqMat)[0]);
+
+		double minVal, maxVal;
+		cv::minMaxLoc(tmpFreqs, &minVal, &maxVal);
+		tmpFreqs = tmpFreqs/maxVal;
+
 #endif
 		int j = 0;
 		// Create the sound :O
 		for(int i = 0; i<44100 ; i++){
 			// Sine Wave
-			int bright = params.brightness;
+			float bright = params.brightness;
 #ifndef FREQHISTO
 			//audioData[i] = (amplitude * sin( (2*M_PI* bright*params.freq)/44100 * (float)i));
 #endif
 			// Overtones
 #ifdef FREQHISTO
-			audioData[i] = 0;
-			if(tmpFreqs.at<float>(0,0)>0.22)
-				audioData[i] += amplitude* sin((2*M_PI*(bright*392.f))/44100.f * (float)i);
-			if(tmpFreqs.at<float>(0,1)>0.22)
-				audioData[i] += amplitude* sin((2*M_PI*(bright*440.f))/44100.f * (float)i);
-			if(tmpFreqs.at<float>(0,2)>0.22)
-				audioData[i] += amplitude* sin((2*M_PI*(bright*466.f))/44100.f * (float)i);
-			if(tmpFreqs.at<float>(0,3)>0.22)
-				audioData[i] += amplitude* sin((2*M_PI*(bright*523.f))/44100.f * (float)i);
-			if(tmpFreqs.at<float>(0,4)>0.22)
-				audioData[i] += amplitude* sin((2*M_PI*(bright*587.f))/44100.f * (float)i);
-			if(tmpFreqs.at<float>(0,5)>0.22)
-				audioData[i] += amplitude* sin((2*M_PI*(bright*698.f))/44100.f * (float)i);
+			tmp.data[i] = 0;
+			//if(tmpFreqs.at<float>(0,0)>0.26)
+				tmp.data[i] += (tmpFreqs.at<float>(0,0)*amplitude)* sin((2*M_PI*(bright*392.f))/44100.f * (float)i);
+			//if(tmpFreqs.at<float>(0,1)>0.26)
+				tmp.data[i] += (tmpFreqs.at<float>(0,1)*amplitude)* sin((2*M_PI*(bright*440.f))/44100.f * (float)i);
+			//if(tmpFreqs.at<float>(0,2)>0.26)
+				tmp.data[i] += (tmpFreqs.at<float>(0,2)*amplitude)* sin((2*M_PI*(bright*466.f))/44100.f * (float)i);
+			//if(tmpFreqs.at<float>(0,3)>0.26)
+				tmp.data[i] += (tmpFreqs.at<float>(0,3)*amplitude)* sin((2*M_PI*(bright*523.f))/44100.f * (float)i);
+			//if(tmpFreqs.at<float>(0,4)>0.26)
+				tmp.data[i] += (tmpFreqs.at<float>(0,4)*amplitude)* sin((2*M_PI*(bright*587.f))/44100.f * (float)i);
+			//if(tmpFreqs.at<float>(0,5)>0.26)
+				tmp.data[i] += (tmpFreqs.at<float>(0,5)*amplitude)* sin((2*M_PI*(bright*698.f))/44100.f * (float)i);
 #endif
 			// Textured
 			float tst = (float)(rand()%10000)-5000.f;
 			//std::cout << params.texture << " " << tst << std::endl;
-			audioData[i] += (params.texture * tst);
+			tmp.data[i] += (params.texture * tst);
 			// Cut-off
 #ifdef FREQHISTO
 			int maxVal = (tmpFreqs.at<float>(0,0)>0.2)+(tmpFreqs.at<float>(0,1)>0.2)+(tmpFreqs.at<float>(0,2)>0.2)+
 				(tmpFreqs.at<float>(0,3)>0.2)+(tmpFreqs.at<float>(0,4)>0.2)+(tmpFreqs.at<float>(0,5)>0.2);
 			maxVal *= amplitude;
+
+			maxVal = amplitude;
 #else
 			int maxVal = amplitude;
 #endif
@@ -82,9 +95,9 @@ namespace audio{
 			float RC = ((1-params.dampThres)*150)/44100.f;
 			float dt = 1/44100.f;
 			float alpha = dt/(RC+dt);
-		//	printf("RC = %f \t dt = %f \t alpha = %f\n", RC, dt, alpha);
+			//	printf("RC = %f \t dt = %f \t alpha = %f\n", RC, dt, alpha);
 			if(i>0){
-				audioData[i] = alpha*audioData[i] + (1-alpha)*audioData[i-1];
+				tmp.data[i] = alpha*tmp.data[i] + (1-alpha)*tmp.data[i-1];
 			}
 
 			// ADRS
@@ -104,7 +117,7 @@ namespace audio{
 			else{
 				ADRS=0;
 			}
-			audioData[i] *= ADRS;
+			tmp.data[i] *= ADRS;
 		}
 #ifdef FREQHISTO
 		tmpFreqs.release();
@@ -119,11 +132,12 @@ namespace audio{
 
 		alGenBuffers( 1, &tmp.buffer );
 		//audioData = data;
-		
-		alBufferData( tmp.buffer, AL_FORMAT_MONO16, audioData, 44100, 44100 );
+
+		alBufferData( tmp.buffer, AL_FORMAT_MONO16, tmp.data, 44100, 44100 );
 		alSourcei( tmp.source, AL_BUFFER,  tmp.buffer );	
+		//tmp.data = audioData;
 		sounds.push_back(tmp);
-		delete [] audioData;
+		//delete [] audioData;
 	}
 
 	void audioEngine::playSounds(){

@@ -45,6 +45,7 @@ namespace audio{
 		ALuint source;
 		ALuint buffer;
 		float location[3];
+		short* data;
 	};
 
 
